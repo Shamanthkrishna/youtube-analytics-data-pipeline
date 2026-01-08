@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+.env
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+
+# Secrets
+config/secrets.yaml
+
+# Data
+raw_data/
