@@ -36,24 +36,33 @@ from dotenv import load_dotenv  # Load environment variables from .env file
 import logging
 
 
-# Configure Logging
+# ===== LOGGING CONFIGURATION =====
+# Set up logging to track script execution and debug issues
+# Logs are stored in a separate 'Logs' folder with timestamped filenames
 log_folder = 'Logs'
 
-# Create Logs directory
+# Create Logs directory if it doesn't exist
+# exist_ok=True prevents error if folder already exists from previous runs
 os.makedirs(log_folder, exist_ok=True)
 
-# Configure Output Folder
+# ===== OUTPUT FOLDER CONFIGURATION =====
+# Set up output folder where CSV files will be saved
+# This keeps the project directory organized by separating raw data from code
 output_folder = 'Output'
 
-# Create Output directory for CSV files
+# Create Output directory for CSV files if it doesn't exist
 os.makedirs(output_folder, exist_ok=True)
 
+# Generate a unique log filename with current timestamp
+# Format: log_20260119_143025.log (YYYYMMDD_HHMMSS)
+# This allows tracking execution history across multiple runs
 log_filename = os.path.join(log_folder, f'log_{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}.log')
 
+# Configure the logging system
 logging.basicConfig(
-    filename=log_filename,
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
+    filename=log_filename,  # Write logs to the timestamped file
+    level=logging.INFO,  # Capture INFO level and above (INFO, WARNING, ERROR, CRITICAL)
+    format='%(asctime)s - %(levelname)s - %(message)s'  # Format: timestamp - level - message
 )
 
 
@@ -268,61 +277,99 @@ def main(channel_id):
     logging.info(f"Retrieved details for {len(video_details)} videos\n")
     print(f"Retrieved details for {len(video_details)} videos\n")
     
-    # STEP 4: Convert data to pandas DataFrames for easy manipulation
-    # Channel stats is a single row (one channel), so wrap in a list
-    channel_df = pd.DataFrame([channel_stats])
+    # STEP 4: Enrich video details with channel information
+    # Add channel_id and channel_name to each video detail dictionary
+    # This is crucial for identifying which videos belong to which channel
+    # when we combine data from multiple channels into a single CSV file
+    for video in video_details:
+        video['channel_id'] = channel_stats['channel_id']  # Add channel ID reference
+        video['channel_name'] = channel_stats['channel_name']  # Add channel name for readability
     
-    # Video details is already a list of dictionaries
-    videos_df = pd.DataFrame(video_details)
-    
-    # Add channel_id and channel_name columns to video details for reference
-    videos_df['channel_id'] = channel_stats['channel_id']
-    videos_df['channel_name'] = channel_stats['channel_name']
-    
-    # STEP 5: Save data to CSV files with date-based naming
-    # Generate date in format: YYYYMMDD (e.g., 20260115)
-    # One file per day - all channels append to same file
-    date_str = datetime.datetime.now().strftime('%Y%m%d')
-    
-    # Create filenames with output folder path and date only (not timestamp)
-    channel_filename = os.path.join(output_folder, f'channel_stats_{date_str}.csv')
-    videos_filename = os.path.join(output_folder, f'video_details_{date_str}.csv')
-    
-    # Check if files exist to determine whether to write header
-    channel_file_exists = os.path.exists(channel_filename)
-    video_file_exists = os.path.exists(videos_filename)
-    
-    # Append to CSV files (create new if doesn't exist)
-    # mode='a' for append, header=False if file exists (to avoid duplicate headers)
-    channel_df.to_csv(channel_filename, mode='a', header=not channel_file_exists, index=False)
-    videos_df.to_csv(videos_filename, mode='a', header=not video_file_exists, index=False)
-    
-    # Confirm successful save to user
-    logging.info(f"Data appended to:")
-    print(f"Data appended to:")
-    logging.info(f"  - {channel_filename}")
-    print(f"  - {channel_filename}")
-    logging.info(f"  - {videos_filename}")
-    print(f"  - {videos_filename}")
-    
-    # Return DataFrames for further analysis if needed
-    return channel_df, videos_df
+    # Return raw data instead of saving immediately
+    # This allows the main script to collect data from multiple channels
+    # before creating a single consolidated CSV file
+    return channel_stats, video_details
 
 
-# Entry point of the script
-# This block only runs when the script is executed directly (not when imported)
+# ===== SCRIPT ENTRY POINT =====
+# This block only runs when the script is executed directly (not when imported as a module)
 if __name__ == '__main__':
-    # Set the YouTube channel ID you want to analyze
-    # You can find a channel ID by:
-    # 1. Going to the channel page on YouTube
-    # 2. Clicking on the channel URL - it will show the ID
-    # 3. Or using a channel ID finder tool
+    # ===== LOAD CHANNEL IDS FROM CSV FILE =====
+    # Read the CSV file containing channel IDs to process
+    # Expected CSV format: columns 'channel_name' and 'channel_id'
+    # This allows batch processing of multiple channels in one script run
     channelid_data = pd.read_csv('top10channelid.csv')
+    
+    # Ensure output folder exists (redundant but safe if moved to different location)
     output_folder = 'Output'
     os.makedirs(output_folder, exist_ok=True)
 
+    # ===== INITIALIZE DATA COLLECTION LISTS =====
+    # These lists will accumulate data from ALL channels before saving
+    # This approach creates one consolidated file instead of separate files per channel
+    all_channel_stats = []  # Will store dictionaries of channel statistics
+    all_video_details = []  # Will store dictionaries of video details from all channels
+
+    # ===== PROCESS EACH CHANNEL ITERATIVELY =====
+    # Loop through each row in the CSV file to process all channels
     for index, row in channelid_data.iterrows():
+        # Extract channel ID from the current row
         CHANNEL_ID = row['channel_id']
+        
+        # Log and print which channel is being processed for tracking
         logging.info(f"Processing channel ID: {CHANNEL_ID}")
-        # Execute the main data extraction pipeline
-        main(CHANNEL_ID)
+        print(f"\nProcessing channel ID: {CHANNEL_ID}")
+        
+        # Execute the main data extraction pipeline for this channel
+        # Returns: channel_stats (dict) and video_details (list of dicts)
+        channel_stats, video_details = main(CHANNEL_ID)
+        
+        # ===== COLLECT DATA FROM THIS CHANNEL =====
+        # Append channel statistics (single dict) to the list
+        all_channel_stats.append(channel_stats)
+        
+        # Extend (not append) video details list with all videos from this channel
+        # extend() adds individual items, append() would add the entire list as one item
+        all_video_details.extend(video_details)
+    
+    # ===== CREATE CONSOLIDATED DATAFRAMES =====
+    # After processing all channels, convert collected data into pandas DataFrames
+    print("\nCreating final CSV files...")
+    logging.info("Creating final CSV files...")
+    
+    # Convert list of channel stat dictionaries into a DataFrame
+    # Each row represents one channel (10 rows total for 10 channels)
+    channel_df = pd.DataFrame(all_channel_stats)
+    
+    # Convert list of video detail dictionaries into a DataFrame
+    # Each row represents one video from any channel
+    # Could be 100s or 1000s of rows depending on how many videos each channel has
+    videos_df = pd.DataFrame(all_video_details)
+    
+    # ===== GENERATE UNIQUE TIMESTAMP FOR FILE NAMING =====
+    # Create timestamp in format: YYYYMMDD_HHMMSS (e.g., 20260119_143025)
+    # This ensures each script run creates unique files without overwriting previous data
+    # Useful for tracking data collection history and comparing changes over time
+    timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+    
+    # ===== CREATE FULL FILE PATHS =====
+    # Combine output folder path with timestamped filenames
+    # os.path.join handles path separators correctly across different operating systems
+    channel_filename = os.path.join(output_folder, f'channel_stats_{timestamp}.csv')
+    videos_filename = os.path.join(output_folder, f'video_details_{timestamp}.csv')
+    
+    # ===== SAVE DATAFRAMES TO CSV FILES =====
+    # index=False excludes the pandas row index from the CSV output
+    # This keeps the CSV clean with only the actual data columns
+    channel_df.to_csv(channel_filename, index=False)
+    videos_df.to_csv(videos_filename, index=False)
+    
+    # ===== CONFIRM SUCCESSFUL COMPLETION =====
+    # Provide feedback to user and log file about where data was saved
+    print(f"\nAll data saved to:")
+    print(f"  - {channel_filename}")
+    print(f"  - {videos_filename}")
+    logging.info(f"All data saved to:")
+    logging.info(f"  - {channel_filename}")
+    logging.info(f"  - {videos_filename}")
+
