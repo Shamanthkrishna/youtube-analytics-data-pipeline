@@ -34,6 +34,7 @@ import datetime  # Timestamp generation for file naming
 import os  # Access environment variables
 from dotenv import load_dotenv  # Load environment variables from .env file
 import logging
+from rawdata_migration import export_raw_data_to_s3  # S3 upload functionality
 
 
 # ===== LOGGING CONFIGURATION =====
@@ -372,4 +373,32 @@ if __name__ == '__main__':
     logging.info(f"All data saved to:")
     logging.info(f"  - {channel_filename}")
     logging.info(f"  - {videos_filename}")
+    
+    # ===== UPLOAD TO AWS S3 =====
+    # Upload CSV files to S3 with hierarchical folder structure
+    # Files will be organized as: s3://bucket/youtube-raw-data/YYYY/MM/DD/HH/filename.csv
+    
+    # Get S3 bucket name from environment variable
+    # Add this to your .env file: S3_BUCKET_NAME=your-bucket-name
+    S3_BUCKET = os.getenv('S3_BUCKET_NAME')
+    
+    if S3_BUCKET:
+        print(f"\nUploading files to S3 bucket: {S3_BUCKET}...")
+        logging.info(f"Starting S3 upload to bucket: {S3_BUCKET}")
+        
+        # Upload channel stats file
+        success_channel = export_raw_data_to_s3(channel_filename, S3_BUCKET)
+        
+        # Upload video details file
+        success_videos = export_raw_data_to_s3(videos_filename, S3_BUCKET)
+        
+        if success_channel and success_videos:
+            print("\n✓ All files successfully uploaded to S3!")
+            logging.info("All files successfully uploaded to S3")
+        else:
+            print("\n✗ Some files failed to upload to S3. Check logs for details.")
+            logging.warning("Some S3 uploads failed")
+    else:
+        print("\n⚠ S3_BUCKET_NAME not set in .env file. Skipping S3 upload.")
+        logging.warning("S3_BUCKET_NAME not configured, skipping S3 upload")
 
