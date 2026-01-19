@@ -1,0 +1,161 @@
+2026-01-15 12:05:04,303 - INFO - file_cache is only supported with oauth2client<4.0.0
+2026-01-15 12:05:04,310 - INFO - Processing channel ID: UCX6OQ3DkcsbYNE6H8uQQuVA
+2026-01-15 12:05:04,310 - INFO - Fetching channel statistics for UCX6OQ3DkcsbYNE6H8uQQuVA...
+2026-01-15 12:05:04,678 - INFO - Channel: MrBeast
+2026-01-15 12:05:04,679 - INFO - Subscribers: 461000000
+2026-01-15 12:05:04,679 - INFO - Total Views: 107506575878
+2026-01-15 12:05:04,679 - INFO - Video Count: 937
+
+2026-01-15 12:05:04,679 - INFO - Fetching video IDs...
+2026-01-15 12:05:05,129 - INFO - Found 50 videos
+
+2026-01-15 12:05:05,129 - INFO - Fetching video details...
+2026-01-15 12:05:05,386 - INFO - Retrieved details for 50 videos
+
+2026-01-15 12:05:05,395 - INFO - Data saved to:
+2026-01-15 12:05:05,396 - INFO -   - Output\channel_stats_MrBeast_20260115_120505.csv
+2026-01-15 12:05:05,396 - INFO -   - Output\video_details_MrBeast_20260115_120505.csv
+2026-01-15 12:05:05,396 - INFO - Processing channel ID: UCq-Fj5jknLsUf-MWSy4_brA
+2026-01-15 12:05:05,396 - INFO - Fetching channel statistics for UCq-Fj5jknLsUf-MWSy4_brA...
+2026-01-15 12:05:05,473 - INFO - Channel: T-Series
+2026-01-15 12:05:05,474 - INFO - Subscribers: 309000000
+2026-01-15 12:05:05,474 - INFO - Total Views: 327140198864
+2026-01-15 12:05:05,474 - INFO - Video Count: 25195
+
+2026-01-15 12:05:05,474 - INFO - Fetching video IDs...
+2026-01-15 12:05:05,860 - INFO - Found 50 videos
+
+2026-01-15 12:05:05,860 - INFO - Fetching video details...
+2026-01-15 12:05:06,061 - INFO - Retrieved details for 50 videos
+
+2026-01-15 12:05:06,064 - INFO - Data saved to:
+2026-01-15 12:05:06,065 - INFO -   - Output\channel_stats_T-Series_20260115_120506.csv
+2026-01-15 12:05:06,065 - INFO -   - Output\video_details_T-Series_20260115_120506.csv
+2026-01-15 12:05:06,065 - INFO - Processing channel ID: UCbCmjCuTUZos6Inko4u57UQ
+2026-01-15 12:05:06,065 - INFO - Fetching channel statistics for UCbCmjCuTUZos6Inko4u57UQ...
+2026-01-15 12:05:06,138 - INFO - Channel: Cocomelon - Nursery Rhymes
+2026-01-15 12:05:06,139 - INFO - Subscribers: 200000000
+2026-01-15 12:05:06,139 - INFO - Total Views: 214618764678
+2026-01-15 12:05:06,139 - INFO - Video Count: 1871
+
+2026-01-15 12:05:06,139 - INFO - Fetching video IDs...
+2026-01-15 12:05:06,498 - INFO - Found 16 videos
+
+2026-01-15 12:05:06,498 - INFO - Fetching video details...
+2026-01-15 12:05:06,675 - INFO - Retrieved details for 16 videos
+
+2026-01-15 12:05:06,686 - INFO - Data saved to:
+2026-01-15 12:05:06,686 - INFO -   - Output\channel_stats_Cocomelon - Nursery Rhymes_20260115_120506.csv
+2026-01-15 12:05:06,686 - INFO -   - Output\video_details_Cocomelon - Nursery Rhymes_20260115_120506.csv
+2026-01-15 12:05:06,687 - INFO - Processing channel ID: UCpEhnqL0y41EpW2TvWAHD7Q
+2026-01-15 12:05:06,687 - INFO - Fetching channel statistics for UCpEhnqL0y41EpW2TvWAHD7Q...
+2026-01-15 12:05:06,753 - INFO - Channel: SET India
+2026-01-15 12:05:06,753 - INFO - Subscribers: 188000000
+2026-01-15 12:05:06,753 - INFO - Total Views: 185190297276
+2026-01-15 12:05:06,753 - INFO - Video Count: 164920
+
+2026-01-15 12:05:06,753 - INFO - Fetching video IDs...
+2026-01-15 12:05:06,942 - INFO - Found 50 videos
+
+2026-01-15 12:05:06,942 - INFO - Fetching video details...
+2026-01-15 12:05:07,400 - INFO - Retrieved details for 50 videos
+
+2026-01-15 12:05:07,403 - INFO - Data saved to:
+2026-01-15 12:05:07,403 - INFO -   - Output\channel_stats_SET India_20260115_120507.csv
+2026-01-15 12:05:07,403 - INFO -   - Output\video_details_SET India_20260115_120507.csv
+2026-01-15 12:05:07,403 - INFO - Processing channel ID: UCk8GzjMOrta8yxDcKfylJYw
+2026-01-15 12:05:07,404 - INFO - Fetching channel statistics for UCk8GzjMOrta8yxDcKfylJYw...
+2026-01-15 12:05:07,469 - INFO - Channel: ✿ Kids Diana Show
+2026-01-15 12:05:07,469 - INFO - Subscribers: 138000000
+2026-01-15 12:05:07,469 - INFO - Total Views: 121909673319
+2026-01-15 12:05:07,469 - INFO - Video Count: 1525
+
+2026-01-15 12:05:07,469 - INFO - Fetching video IDs...
+2026-01-15 12:05:07,869 - INFO - Found 19 videos
+
+2026-01-15 12:05:07,870 - INFO - Fetching video details...
+2026-01-15 12:05:07,984 - INFO - Retrieved details for 19 videos
+
+2026-01-15 12:05:07,996 - INFO - Data saved to:
+2026-01-15 12:05:07,996 - INFO -   - Output\channel_stats_✿ Kids Diana Show_20260115_120507.csv
+2026-01-15 12:05:07,997 - INFO -   - Output\video_details_✿ Kids Diana Show_20260115_120507.csv
+2026-01-15 12:05:07,997 - INFO - Processing channel ID: UC-lHJZR3Gqxm24_Vd_AJ5Yw
+2026-01-15 12:05:07,997 - INFO - Fetching channel statistics for UC-lHJZR3Gqxm24_Vd_AJ5Yw...
+2026-01-15 12:05:08,068 - INFO - Channel: PewDiePie
+2026-01-15 12:05:08,068 - INFO - Subscribers: 110000000
+2026-01-15 12:05:08,068 - INFO - Total Views: 29452506493
+2026-01-15 12:05:08,068 - INFO - Video Count: 4654
+
+2026-01-15 12:05:08,068 - INFO - Fetching video IDs...
+2026-01-15 12:05:08,207 - INFO - Found 0 videos
+
+2026-01-15 12:05:08,208 - INFO - Fetching video details...
+2026-01-15 12:05:08,208 - INFO - Retrieved details for 0 videos
+
+2026-01-15 12:05:08,214 - INFO - Data saved to:
+2026-01-15 12:05:08,214 - INFO -   - Output\channel_stats_PewDiePie_20260115_120508.csv
+2026-01-15 12:05:08,214 - INFO -   - Output\video_details_PewDiePie_20260115_120508.csv
+2026-01-15 12:05:08,214 - INFO - Processing channel ID: UCJplp5SjeGSdVdwsfb9Q7lQ
+2026-01-15 12:05:08,214 - INFO - Fetching channel statistics for UCJplp5SjeGSdVdwsfb9Q7lQ...
+2026-01-15 12:05:08,299 - INFO - Channel: Like Nastya
+2026-01-15 12:05:08,299 - INFO - Subscribers: 131000000
+2026-01-15 12:05:08,299 - INFO - Total Views: 118523125120
+2026-01-15 12:05:08,299 - INFO - Video Count: 1031
+
+2026-01-15 12:05:08,299 - INFO - Fetching video IDs...
+2026-01-15 12:05:08,496 - INFO - Found 23 videos
+
+2026-01-15 12:05:08,496 - INFO - Fetching video details...
+2026-01-15 12:05:08,622 - INFO - Retrieved details for 23 videos
+
+2026-01-15 12:05:08,631 - INFO - Data saved to:
+2026-01-15 12:05:08,631 - INFO -   - Output\channel_stats_Like Nastya_20260115_120508.csv
+2026-01-15 12:05:08,631 - INFO -   - Output\video_details_Like Nastya_20260115_120508.csv
+2026-01-15 12:05:08,631 - INFO - Processing channel ID: UCvlE5gTbOvjiolFlEm-c_Ow
+2026-01-15 12:05:08,631 - INFO - Fetching channel statistics for UCvlE5gTbOvjiolFlEm-c_Ow...
+2026-01-15 12:05:08,696 - INFO - Channel: Vlad and Niki
+2026-01-15 12:05:08,697 - INFO - Subscribers: 149000000
+2026-01-15 12:05:08,697 - INFO - Total Views: 117563263164
+2026-01-15 12:05:08,697 - INFO - Video Count: 984
+
+2026-01-15 12:05:08,697 - INFO - Fetching video IDs...
+2026-01-15 12:05:09,017 - INFO - Found 5 videos
+
+2026-01-15 12:05:09,017 - INFO - Fetching video details...
+2026-01-15 12:05:09,098 - INFO - Retrieved details for 5 videos
+
+2026-01-15 12:05:09,101 - INFO - Data saved to:
+2026-01-15 12:05:09,102 - INFO -   - Output\channel_stats_Vlad and Niki_20260115_120509.csv
+2026-01-15 12:05:09,102 - INFO -   - Output\video_details_Vlad and Niki_20260115_120509.csv
+2026-01-15 12:05:09,102 - INFO - Processing channel ID: UCFFbwnve3yF62-tVXkTyHqg
+2026-01-15 12:05:09,102 - INFO - Fetching channel statistics for UCFFbwnve3yF62-tVXkTyHqg...
+2026-01-15 12:05:09,167 - INFO - Channel: Zee Music Company
+2026-01-15 12:05:09,167 - INFO - Subscribers: 122000000
+2026-01-15 12:05:09,167 - INFO - Total Views: 84973168152
+2026-01-15 12:05:09,167 - INFO - Video Count: 15515
+
+2026-01-15 12:05:09,167 - INFO - Fetching video IDs...
+2026-01-15 12:05:09,342 - INFO - Found 41 videos
+
+2026-01-15 12:05:09,342 - INFO - Fetching video details...
+2026-01-15 12:05:09,756 - INFO - Retrieved details for 41 videos
+
+2026-01-15 12:05:09,767 - INFO - Data saved to:
+2026-01-15 12:05:09,767 - INFO -   - Output\channel_stats_Zee Music Company_20260115_120509.csv
+2026-01-15 12:05:09,767 - INFO -   - Output\video_details_Zee Music Company_20260115_120509.csv
+2026-01-15 12:05:09,768 - INFO - Processing channel ID: UCJ5v_MCY6GNUBTO8-D3XoAg
+2026-01-15 12:05:09,768 - INFO - Fetching channel statistics for UCJ5v_MCY6GNUBTO8-D3XoAg...
+2026-01-15 12:05:09,847 - INFO - Channel: WWE
+2026-01-15 12:05:09,847 - INFO - Subscribers: 112000000
+2026-01-15 12:05:09,847 - INFO - Total Views: 101230148203
+2026-01-15 12:05:09,847 - INFO - Video Count: 90349
+
+2026-01-15 12:05:09,847 - INFO - Fetching video IDs...
+2026-01-15 12:05:10,260 - INFO - Found 50 videos
+
+2026-01-15 12:05:10,260 - INFO - Fetching video details...
+2026-01-15 12:05:10,518 - INFO - Retrieved details for 50 videos
+
+2026-01-15 12:05:10,522 - INFO - Data saved to:
+2026-01-15 12:05:10,522 - INFO -   - Output\channel_stats_WWE_20260115_120510.csv
+2026-01-15 12:05:10,522 - INFO -   - Output\video_details_WWE_20260115_120510.csv

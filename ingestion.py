@@ -33,6 +33,29 @@ import isodate  # Parse ISO 8601 duration format (e.g., PT4M13S)
 import datetime  # Timestamp generation for file naming
 import os  # Access environment variables
 from dotenv import load_dotenv  # Load environment variables from .env file
+import logging
+
+
+# Configure Logging
+log_folder = 'Logs'
+
+# Create Logs directory
+os.makedirs(log_folder, exist_ok=True)
+
+# Configure Output Folder
+output_folder = 'Output'
+
+# Create Output directory for CSV files
+os.makedirs(output_folder, exist_ok=True)
+
+log_filename = os.path.join(log_folder, f'log_{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}.log')
+
+logging.basicConfig(
+    filename=log_filename,
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+
 
 # Load environment variables from .env file (contains API key)
 load_dotenv()
@@ -217,44 +240,69 @@ def main(channel_id):
                channel statistics and video details respectively
     """
     # STEP 1: Get channel-level statistics
+    logging.info(f"Fetching channel statistics for {channel_id}...")
     print(f"Fetching channel statistics for {channel_id}...")
     channel_stats = get_channel_stats(youtube, channel_id)
     
     # Display channel information to the user
+    logging.info(f"Channel: {channel_stats['channel_name']}")
     print(f"Channel: {channel_stats['channel_name']}")
+    logging.info(f"Subscribers: {channel_stats['subscribers']}")
     print(f"Subscribers: {channel_stats['subscribers']}")
+    logging.info(f"Total Views: {channel_stats['total_views']}")
     print(f"Total Views: {channel_stats['total_views']}")
+    logging.info(f"Video Count: {channel_stats['video_count']}\n")
     print(f"Video Count: {channel_stats['video_count']}\n")
     
     # STEP 2: Get list of all video IDs from the channel
+    logging.info("Fetching video IDs...")
     print("Fetching video IDs...")
     video_ids = get_video_ids(youtube, channel_id)
+    logging.info(f"Found {len(video_ids)} videos\n")
     print(f"Found {len(video_ids)} videos\n")
     
     # STEP 3: Get detailed information for each video
+    logging.info("Fetching video details...")
     print("Fetching video details...")
     video_details = get_video_details(youtube, video_ids)
+    logging.info(f"Retrieved details for {len(video_details)} videos\n")
     print(f"Retrieved details for {len(video_details)} videos\n")
     
     # STEP 4: Convert data to pandas DataFrames for easy manipulation
     # Channel stats is a single row (one channel), so wrap in a list
     channel_df = pd.DataFrame([channel_stats])
+    
     # Video details is already a list of dictionaries
     videos_df = pd.DataFrame(video_details)
     
-    # STEP 5: Save data to CSV files with timestamp
-    # Generate timestamp in format: YYYYMMDD_HHMMSS (e.g., 20260113_143025)
-    timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-    channel_filename = f'channel_stats_{timestamp}.csv'
-    videos_filename = f'video_details_{timestamp}.csv'
+    # Add channel_id and channel_name columns to video details for reference
+    videos_df['channel_id'] = channel_stats['channel_id']
+    videos_df['channel_name'] = channel_stats['channel_name']
     
-    # Export DataFrames to CSV (index=False to exclude row numbers)
-    channel_df.to_csv(channel_filename, index=False)
-    videos_df.to_csv(videos_filename, index=False)
+    # STEP 5: Save data to CSV files with date-based naming
+    # Generate date in format: YYYYMMDD (e.g., 20260115)
+    # One file per day - all channels append to same file
+    date_str = datetime.datetime.now().strftime('%Y%m%d')
+    
+    # Create filenames with output folder path and date only (not timestamp)
+    channel_filename = os.path.join(output_folder, f'channel_stats_{date_str}.csv')
+    videos_filename = os.path.join(output_folder, f'video_details_{date_str}.csv')
+    
+    # Check if files exist to determine whether to write header
+    channel_file_exists = os.path.exists(channel_filename)
+    video_file_exists = os.path.exists(videos_filename)
+    
+    # Append to CSV files (create new if doesn't exist)
+    # mode='a' for append, header=False if file exists (to avoid duplicate headers)
+    channel_df.to_csv(channel_filename, mode='a', header=not channel_file_exists, index=False)
+    videos_df.to_csv(videos_filename, mode='a', header=not video_file_exists, index=False)
     
     # Confirm successful save to user
-    print(f"Data saved to:")
+    logging.info(f"Data appended to:")
+    print(f"Data appended to:")
+    logging.info(f"  - {channel_filename}")
     print(f"  - {channel_filename}")
+    logging.info(f"  - {videos_filename}")
     print(f"  - {videos_filename}")
     
     # Return DataFrames for further analysis if needed
@@ -269,7 +317,12 @@ if __name__ == '__main__':
     # 1. Going to the channel page on YouTube
     # 2. Clicking on the channel URL - it will show the ID
     # 3. Or using a channel ID finder tool
-    CHANNEL_ID = 'UCX6OQ3DkcsbYNE6H8uQQuVA'  # MrBeast channel as example
-    
-    # Execute the main data extraction pipeline
-    main(CHANNEL_ID)
+    channelid_data = pd.read_csv('top10channelid.csv')
+    output_folder = 'Output'
+    os.makedirs(output_folder, exist_ok=True)
+
+    for index, row in channelid_data.iterrows():
+        CHANNEL_ID = row['channel_id']
+        logging.info(f"Processing channel ID: {CHANNEL_ID}")
+        # Execute the main data extraction pipeline
+        main(CHANNEL_ID)
