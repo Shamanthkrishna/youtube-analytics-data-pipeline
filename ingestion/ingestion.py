@@ -40,7 +40,10 @@ from rawdata_migration import export_raw_data_to_s3  # S3 upload functionality
 # ===== LOGGING CONFIGURATION =====
 # Set up logging to track script execution and debug issues
 # Logs are stored in a separate 'Logs' folder with timestamped filenames
-log_folder = 'Logs'
+# Get the project root directory (parent of ingestion folder)
+script_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(script_dir)
+log_folder = os.path.join(project_root, 'Logs')
 
 # Create Logs directory if it doesn't exist
 # exist_ok=True prevents error if folder already exists from previous runs
@@ -49,7 +52,7 @@ os.makedirs(log_folder, exist_ok=True)
 # ===== OUTPUT FOLDER CONFIGURATION =====
 # Set up output folder where CSV files will be saved
 # This keeps the project directory organized by separating raw data from code
-output_folder = 'Output'
+output_folder = os.path.join(project_root, 'Output')
 
 # Create Output directory for CSV files if it doesn't exist
 os.makedirs(output_folder, exist_ok=True)
@@ -299,11 +302,20 @@ if __name__ == '__main__':
     # Read the CSV file containing channel IDs to process
     # Expected CSV format: columns 'channel_name' and 'channel_id'
     # This allows batch processing of multiple channels in one script run
-    channelid_data = pd.read_csv('top10channelid.csv')
+    # Get the directory where this script is located
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    csv_path = os.path.join(script_dir, 'top10channelid.csv')
+    channelid_data = pd.read_csv(csv_path)
     
-    # Ensure output folder exists (redundant but safe if moved to different location)
-    output_folder = 'Output'
+    # Ensure output folder exists in the parent directory (project root)
+    # Go up one level from ingestion/ to project root
+    project_root = os.path.dirname(script_dir)
+    output_folder = os.path.join(project_root, 'Output')
     os.makedirs(output_folder, exist_ok=True)
+    
+    # Update log folder path to project root as well
+    log_folder = os.path.join(project_root, 'Logs')
+    os.makedirs(log_folder, exist_ok=True)
 
     # ===== INITIALIZE DATA COLLECTION LISTS =====
     # These lists will accumulate data from ALL channels before saving
