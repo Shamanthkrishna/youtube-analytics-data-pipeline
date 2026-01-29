@@ -551,23 +551,140 @@ Maintain a single source of truth (Databricks for active development, Git for ve
 
 ---
 
+### Problem 7: Incremental Fetch Logic Bugs & Data Quality Issues
+**Issue:**  
+After implementing the initial incremental fetching system, several critical bugs were discovered during production runs that caused incorrect data and potential quota waste:
+
+**Bug 1: Video Duration Parsing Error**
+- **Symptom:** All videos in a batch had identical duration values
+- **Root Cause:** ISO 8601 duration extraction was outside the per-item loop
+  ```python
+  # WRONG: duration extracted once, reused for all videos
+  duration = isodate.parse_duration(item['contentDetails']['duration'])
+  for item in response['items']:
+      video_info['duration'] = duration  # Same value for all!
+  ```
+- **Impact:** Corrupted video duration data, making analytics unreliable
+- **Fix:** Moved duration parsing inside the loop for each video item
+  ```python
+  for item in response['items']:
+      video_info = {
+          'duration': isodate.parse_duration(
+              item['contentDetails']['duration']
+          ).total_seconds()
+      }
+  ```
+
+**Bug 2: Incremental Boundary Missing Videos**
+- **Symptom:** Videos uploaded exactly at `last_fetch_time` were missed
+- **Root Cause:** Using exact cache timestamp as `publishedAfter` filter caused boundary condition issues
+- **Fix:** Implemented **safe_fetch_time** with 10-minute buffer
+  ```python
+  # Parse stored timestamp and subtract 10 minutes for safety
+  last_dt = datetime.datetime.fromisoformat(last_fetch_time.replace('Z', '+00:00'))
+  safe_fetch_time = (last_dt - datetime.timedelta(minutes=10)).isoformat() + 'Z'
+  ```
+- **Benefit:** Ensures no videos are missed due to timing precision issues
+
+**Bug 3: UTC Timestamp Inconsistency**
+- **Symptom:** Incremental mode sometimes fetched wrong time ranges
+- **Root Cause:** Mixed use of naive and timezone-aware datetime objects
+- **Fix:** Standardized all timestamps to UTC-aware format
+  ```python
+  # Consistent UTC timestamp generation
+  fetch_time = datetime.datetime.now(datetime.timezone.utc).isoformat()
+  ```
+- **Impact:** Ensures cache timestamps match YouTube API's UTC-based `publishedAfter` filter
+
+**Bug 4: Unintended Full Fetches**
+- **Symptom:** Incremental mode triggered full fetches unexpectedly
+- **Root Cause:** Conditional logic didn't properly distinguish first run vs. subsequent runs
+- **Fix:** Added explicit checks for cache availability
+  ```python
+  if incremental and last_fetch_time:
+      # Only apply publishedAfter if we have a safe timestamp
+      if safe_fetch_time:
+          video_ids = get_video_ids(youtube, channel_id, 
+                                    published_after=safe_fetch_time)
+  ```
+
+**Enhancement: API Quota Protection Guardrails**
+
+To prevent accidental quota exhaustion, added **MAX_VIDEOS_PER_RUN** limit:
+
+```python
+MAX_VIDEOS_PER_RUN = 500  # Cap video details fetches
+
+# Limit video processing per run
+if len(new_video_ids) > MAX_VIDEOS_PER_RUN:
+    logger.warning(f"Limiting to {MAX_VIDEOS_PER_RUN} videos (found {len(new_video_ids)})")
+    new_video_ids = new_video_ids[:MAX_VIDEOS_PER_RUN]
+```
+
+**Benefits:**
+- ✅ Prevents quota exhaustion from high-volume channels
+- ✅ Enables controlled execution cadence (every 3 hours safely)
+- ✅ Predictable API usage: ~500 units per run maximum
+
+**Quota Math (After All Fixes):**
+- **Every 3 hours:** 8 runs/day × 500 units = 4,000 units/day (within limits)
+- **Safety margin:** 6,000 units remaining for errors/testing
+- **Controlled growth:** Can add more channels without quota concerns
+
+**Additional Improvements:**
+- Enhanced logging for incremental vs. full mode execution
+- Better error messages for debugging time-related issues
+- Defensive checks to prevent logic bugs
+- Improved observability via detailed logs
+
+**Verification Steps:**
+1. ✅ Tested first run (full fetch) - works correctly
+2. ✅ Tested subsequent run (incremental) - only new videos fetched
+3. ✅ Verified duration values are unique per video
+4. ✅ Confirmed no missed videos at time boundaries
+5. ✅ Validated UTC timestamp consistency
+6. ✅ Tested MAX_VIDEOS_PER_RUN cap with high-volume channel
+
+**Lesson Learned:**  
+Incremental data pipelines require careful handling of:
+- **Time boundaries** (use buffer windows for safety)
+- **Timezone awareness** (always use UTC for consistency)
+- **Loop variable scope** (extract data inside loops, not outside)
+- **Quota safeguards** (add caps to prevent runaway API usage)
+- **Edge cases** (first run, cache corruption, boundary conditions)
+
+Test incremental logic thoroughly with multiple runs to catch timing-related bugs.
+
+---
+
 ## Key Optimizations Summary
 
 ### API Quota Optimization
 - **Before:** 1,530 units per run × 4 runs/day = 6,120 units/day
-- **After:** 150 units per run × 1 run/day = 150 units/day
-- **Savings:** ~97% reduction in API quota usage
+- **After (v1):** 150 units per run × 1 run/day = 150 units/day
+- **After (v2 with safeguards):** 500 units per run × 8 runs/day = 4,000 units/day (controlled)
+- **Total Savings:** ~35% reduction from original while increasing frequency
 
 ### Caching Implementation
 - JSON-based cache files stored in `/cache/` directory
 - Stores: `last_fetch_time`, `video_ids`, `updated_at`
 - Cache persists across job runs
 - Manual cache clearing available via `clear_cache()` function
+- 10-minute safety buffer to prevent boundary condition misses
 
-### Job Scheduling Changes
-- **Original:** Every 6 hours (4 times daily)
-- **Optimized:** Once daily (sufficient for analytics use case)
-- **Benefit:** Lower API usage, reduced costs, adequate freshness for reporting
+### Job Scheduling Evolution
+- **Original:** Every 6 hours (4 times daily) - quota exhaustion risk
+- **Optimized v1:** Once daily (safe but low freshness)
+- **Optimized v2:** Every 3 hours (8 times daily) with MAX_VIDEOS_PER_RUN cap
+- **Benefit:** Higher freshness (3-hour lag) with quota protection
+
+### Incremental Logic Improvements
+- ✅ Fixed video duration parsing bug (per-item extraction)
+- ✅ Implemented safe_fetch_time with 10-minute buffer
+- ✅ Standardized UTC timestamp handling
+- ✅ Added MAX_VIDEOS_PER_RUN quota guardrail (500 videos/run)
+- ✅ Improved conditional logic for first run vs subsequent runs
+- ✅ Enhanced logging for better observability
 
 ---
 
@@ -583,4 +700,4 @@ For questions or collaboration opportunities, please open an issue.
 ---
 
 **Last Updated:** January 29, 2026  
-**Version:** 1.1.0 (Databricks Integration + Logging Fixes)
+**Version:** 1.2.0 (Incremental Logic Stabilization + Quota Safeguards)
