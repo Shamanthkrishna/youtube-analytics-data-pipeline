@@ -295,6 +295,131 @@ YouTube API has daily quotas. Wait 24 hours or request quota increase from Googl
 
 ---
 
+## Problems Faced & Solutions
+
+### Problem 1: GitHub Push Protection - Exposed AWS Credentials
+**Issue:**  
+When attempting to push code to GitHub, Push Protection blocked the commit because AWS credentials were accidentally hardcoded in `ingestion_databricks.py` (lines 295-296).
+
+**Error Message:**
+```
+GitHub Push Protection - Secret Scanning blocked push
+AWS Access Key ID detected: AKIAZHSLKEPJQHQ23V4E
+```
+
+**Root Cause:**  
+During development, AWS credentials were temporarily hardcoded for testing instead of being passed via Databricks widgets or environment variables.
+
+**Solution:**
+1. **Immediate Action:** Reset git history to remove the commit with exposed credentials
+   ```bash
+   git reset --soft HEAD~2
+   ```
+2. **Remove credentials** from the code file
+3. **Re-commit** with clean version
+4. **Security Remediation:** Rotated AWS credentials in AWS IAM console
+5. **Prevention:** Updated code to use `dbutils.widgets.get()` for credential management in Databricks
+
+**Lesson Learned:**  
+Never hardcode credentials in source code. Always use environment variables, secret managers, or configuration files that are added to `.gitignore`.
+
+---
+
+### Problem 2: Missing Output Files After Git Operations
+**Issue:**  
+After performing git operations (reset and cleanup), January 28th output files were missing from the local workspace, even though they were generated in Databricks.
+
+**Files Missing:**
+- 8 runs from January 28, 2026 (16:14 to 20:31)
+- Both `channel_stats_*.csv` and `video_details_*.csv` files
+
+**Root Cause:**  
+The git reset operation removed local commits that included these files, but they were still present in the remote repository (committed from Databricks).
+
+**Solution:**
+1. **Pull from remote** to recover the missing files:
+   ```bash
+   git pull
+   ```
+2. **Verified** all 8 sets of files were restored in the `Output/` folder
+3. **Resolved merge conflicts** that occurred in the Databricks notebook
+
+**Lesson Learned:**  
+Always pull from remote before performing destructive git operations like reset. Keep separate sync workflows for Databricks and local development.
+
+---
+
+### Problem 3: No Log Files Generated in Databricks
+**Issue:**  
+When running the ingestion notebook in Databricks, no log files were being created in the `/Workspace/.../Logs/` folder, even though logging statements appeared in console output.
+
+**Root Cause:**  
+The logging configuration only used `logging.basicConfig()` which outputs to console (StreamHandler) but doesn't create physical log files in Databricks workspace.
+
+**Original Configuration:**
+```python
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+```
+
+**Solution:**
+Implemented **dual-handler logging** with both file and console output:
+
+```python
+# Generate timestamped log filename
+log_timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+log_filename = f'{DBFS_LOGS_PATH}/log_{log_timestamp}.log'
+
+# Create Logs directory
+os.makedirs(DBFS_LOGS_PATH, exist_ok=True)
+
+# Configure logger with both handlers
+logger = logging.getLogger('youtube_ingestion')
+logger.setLevel(logging.INFO)
+
+# File handler for persistent logs
+file_handler = logging.FileHandler(log_filename, mode='w')
+file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+
+# Console handler for notebook output
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+
+# Add both handlers
+logger.addHandler(file_handler)
+logger.addHandler(console_handler)
+```
+
+**Additional Changes:**
+- Changed `DBFS_INPUT_PATH` from `/ingestion/` back to `/input/` to maintain consistency
+- Used `os.makedirs()` instead of `dbutils.fs.mkdirs()` for Workspace paths
+- Added log file path to pipeline summary output
+
+**Verification:**
+Log files now created with naming convention: `log_YYYYMMDD_HHMMSS.log` in the Logs folder.
+
+**Lesson Learned:**  
+Databricks workspace paths require explicit file handlers. `logging.basicConfig()` alone is insufficient for persistent logging in Databricks notebooks.
+
+---
+
+### Problem 4: Databricks-Local Development Sync Conflicts
+**Issue:**  
+Merge conflicts occurred when syncing code between Databricks workspace and local Git repository, particularly in notebook files.
+
+**Solution:**
+- Established clear workflow: Develop in Databricks → Commit from Databricks → Pull locally for backup
+- Used Git commit messages to track which environment made changes
+- Resolved conflicts by accepting Databricks version (more recent)
+
+**Lesson Learned:**  
+Maintain a single source of truth (Databricks for active development, Git for version control and backup).
+
+---
+
 ## Contributing
 This is a personal learning project. Suggestions and feedback are welcome!
 
@@ -306,5 +431,5 @@ For questions or collaboration opportunities, please open an issue.
 
 ---
 
-**Last Updated:** January 19, 2026  
-**Version:** 1.0.0 (Bronze Layer Complete)
+**Last Updated:** January 29, 2026  
+**Version:** 1.1.0 (Databricks Integration + Logging Fixes)
