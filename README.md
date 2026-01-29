@@ -406,7 +406,138 @@ Databricks workspace paths require explicit file handlers. `logging.basicConfig(
 
 ---
 
-### Problem 4: Databricks-Local Development Sync Conflicts
+### Problem 4: YouTube API Quota Exceeded - Job Failures
+**Issue:**  
+Databricks scheduled jobs started failing after a few runs due to YouTube Data API v3 quota limits being exceeded. The default quota is 10,000 units per day, and re-fetching all videos on every run quickly exhausted this limit.
+
+**Error Symptoms:**
+```
+HttpError 403: quotaExceeded
+The request cannot be completed because you have exceeded your quota.
+```
+
+**Quota Breakdown (Before Optimization):**
+- 10 channels × 50 videos each = 500 videos per run
+- Channel stats API call: ~3 units × 10 = 30 units
+- Video list API calls: ~100 units per channel = 1,000 units
+- Video details API calls: ~1 unit per video = 500 units
+- **Total per run: ~1,530 units**
+- Daily runs (every 6 hours): 4 runs × 1,530 = **6,120 units/day**
+
+This left very little buffer for errors, testing, or additional channels.
+
+**Root Cause:**  
+The pipeline was re-fetching **all videos** from each channel on every run, even though most videos were already processed in previous runs. This caused unnecessary API calls for unchanged data.
+
+**Solution - Implemented Incremental Fetching with Caching:**
+
+1. **Video ID Caching:** Created JSON cache files to store previously fetched video IDs
+   ```python
+   def save_channel_cache(channel_id, video_ids, fetch_time):
+       cache_data = {
+           'last_fetch_time': fetch_time,
+           'video_ids': list(set(video_ids)),
+           'updated_at': datetime.datetime.now().isoformat()
+       }
+       # Save to /cache/channel_{id}_cache.json
+   ```
+
+2. **Incremental Mode:** Added `published_after` parameter to fetch only new videos
+   ```python
+   if incremental and last_fetch_time:
+       video_ids = get_video_ids(youtube, channel_id, 
+                                 published_after=last_fetch_time)
+   ```
+
+3. **Smart Deduplication:** Filter out already-cached video IDs before API calls
+   ```python
+   new_video_ids = [vid for vid in video_ids if vid not in cached_video_ids]
+   video_details = get_video_details(youtube, new_video_ids)
+   ```
+
+**Results After Optimization:**
+- **First run (full fetch):** ~1,530 units (same as before)
+- **Subsequent runs (incremental):** ~50-150 units (90% reduction!)
+- Only new videos since last run are fetched
+- API quota usage: **200-400 units/day** (well within limits)
+
+**Additional Mitigations:**
+- Reduced job schedule from every 6 hours to **daily runs**
+- Added `clear_cache()` utility function for manual full refreshes
+- Implemented API call savings counter in logs
+
+**Quota Management:**
+```python
+# Pipeline now shows savings
+print(f"💰 API SAVINGS: Skipped ~{saved_calls} API calls by using cache!")
+```
+
+**Lesson Learned:**  
+Always implement incremental fetching for data pipelines that run frequently. Cache previously processed data and only fetch deltas to minimize API quota usage. Design with quota limits in mind from the start.
+
+---
+
+### Problem 5: Databricks Parameter Management - Secrets vs Widgets
+**Issue:**  
+Initially attempted to use Databricks Secret Scopes for passing API keys and AWS credentials to notebooks, but faced several difficulties:
+
+**Challenges with Secret Scopes:**
+- Complex setup requiring Databricks CLI or Azure Key Vault integration
+- Difficult to modify secrets during testing/debugging
+- Scope permissions management complexity
+- Not ideal for non-sensitive parameters like S3 bucket names or file paths
+
+**Original Approach (Problematic):**
+```python
+# Attempted secret scope usage
+API_KEY = dbutils.secrets.get(scope="youtube-api", key="api-key")
+S3_BUCKET = dbutils.secrets.get(scope="aws-secrets", key="bucket-name")
+```
+
+**Problems:**
+- Required creating secret scopes via CLI
+- No visibility into secret values during debugging
+- Mixed sensitive (API keys) and non-sensitive (bucket names) parameters
+- Difficult to pass dynamic parameters like `CHANNEL_CSV_PATH`
+
+**Solution - Switched to Databricks Job Widgets:**
+
+Implemented **widgets** for parameter management with clearer separation:
+
+```python
+# Create widgets for job parameters
+dbutils.widgets.text("YOUTUBE_API_KEY", "")
+dbutils.widgets.text("S3_BUCKET", "")
+dbutils.widgets.text("CHANNEL_CSV_PATH", "")
+dbutils.widgets.text("SAVE_FORMAT", "csv")
+dbutils.widgets.text("UPLOAD_TO_S3", "true")
+dbutils.widgets.text("AWS_ACCESS_KEY_ID", "")
+dbutils.widgets.text("AWS_SECRET_ACCESS_KEY", "")
+
+# Retrieve values
+YOUTUBE_API_KEY = dbutils.widgets.get("YOUTUBE_API_KEY")
+S3_BUCKET = dbutils.widgets.get("S3_BUCKET")
+```
+
+**Advantages of Widgets:**
+- ✅ Easy to configure in Databricks job UI
+- ✅ Can see and modify values without code changes
+- ✅ Supports both sensitive and non-sensitive parameters
+- ✅ No CLI setup required
+- ✅ Values can be passed from job scheduler
+- ✅ Better for development and testing
+
+**Best Practice Adopted:**
+- **Widgets** for job parameters (both sensitive and configuration)
+- **Secret Scopes** reserved for production environments (future enhancement)
+- Widget values are masked in job logs for sensitive parameters
+
+**Lesson Learned:**  
+Start with widgets for flexibility during development. Migrate to secret scopes for production when security requirements increase. Widgets provide the right balance of usability and functionality for scheduled jobs.
+
+---
+
+### Problem 6: Databricks-Local Development Sync Conflicts
 **Issue:**  
 Merge conflicts occurred when syncing code between Databricks workspace and local Git repository, particularly in notebook files.
 
@@ -417,6 +548,26 @@ Merge conflicts occurred when syncing code between Databricks workspace and loca
 
 **Lesson Learned:**  
 Maintain a single source of truth (Databricks for active development, Git for version control and backup).
+
+---
+
+## Key Optimizations Summary
+
+### API Quota Optimization
+- **Before:** 1,530 units per run × 4 runs/day = 6,120 units/day
+- **After:** 150 units per run × 1 run/day = 150 units/day
+- **Savings:** ~97% reduction in API quota usage
+
+### Caching Implementation
+- JSON-based cache files stored in `/cache/` directory
+- Stores: `last_fetch_time`, `video_ids`, `updated_at`
+- Cache persists across job runs
+- Manual cache clearing available via `clear_cache()` function
+
+### Job Scheduling Changes
+- **Original:** Every 6 hours (4 times daily)
+- **Optimized:** Once daily (sufficient for analytics use case)
+- **Benefit:** Lower API usage, reduced costs, adequate freshness for reporting
 
 ---
 
